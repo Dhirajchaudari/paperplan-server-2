@@ -13,6 +13,9 @@ import db from './db/connection';
 
 const app = express();
 
+// Trust reverse proxy (Nginx) to read client's real IP in X-Forwarded-For header
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(compression());
 
@@ -30,17 +33,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-if (env.NODE_ENV !== 'test') {
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests, please try again later', statusCode: 429 },
-  });
-  app.use(limiter);
-}
-
+// Define health check endpoint BEFORE rate limiting so uptime monitors aren't blocked
 app.get('/health', (_req, res) => {
   try {
     db.prepare('SELECT 1').get();
@@ -58,6 +51,17 @@ app.get('/health', (_req, res) => {
     });
   }
 });
+
+if (env.NODE_ENV !== 'test') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later', statusCode: 429 },
+  });
+  app.use(limiter);
+}
 
 app.use('/auth', authRoutes);
 app.use('/tasks', tasksRoutes);
