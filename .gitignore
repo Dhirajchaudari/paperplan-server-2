@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+
+# Databases and storage
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+data/
+
+# Environment files
+.env
+.env.prod
+.env.local
+.env.test
+!.env.example
